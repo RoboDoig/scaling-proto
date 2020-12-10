@@ -51,6 +51,8 @@ public class ClientNetwork : MonoBehaviour
                 PlayerConnect(sender, e);
             } else if (message.Tag == Tags.PlayerInfoTag) {
                 PlayerInfo(sender, e);
+            } else if (message.Tag == Tags.PlayerDisconnectTag) {
+                PlayerDisconnect(sender, e);
             }
         }
     }
@@ -61,6 +63,17 @@ public class ClientNetwork : MonoBehaviour
                 NetworkPlayer networkPlayer = reader.ReadSerializable<NetworkPlayer>();
 
                 networkPlayers.Add(networkPlayer.id, networkPlayer);
+            }
+        }
+
+        UIManager.Instance.PopulateConnectedPlayers(networkPlayers);
+    }
+
+    void PlayerDisconnect(object sender, MessageReceivedEventArgs e) {
+        using (Message message = e.GetMessage()) {
+            using (DarkRiftReader reader = message.GetReader()) {
+                ushort playerID = reader.ReadUInt16();
+                networkPlayers.Remove(playerID);
             }
         }
 
