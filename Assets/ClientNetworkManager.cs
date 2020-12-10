@@ -17,6 +17,7 @@ public class ClientNetworkManager : MonoBehaviour
     }
 
     void MessageReceived(object sender, MessageReceivedEventArgs e) {
+        Debug.Log("MessageReceived");
         using (Message message = e.GetMessage() as Message) {
             if (message.Tag == Tags.PlayerConnectTag) {
                 PlayerConnect(sender, e);
@@ -24,6 +25,8 @@ public class ClientNetworkManager : MonoBehaviour
                 PlayerDisconnect(sender, e);
             }
         }
+
+        ClientUIManager.singleton.PopulateConnectedPlayers(networkPlayers);
     }
 
     void PlayerConnect(object sender, MessageReceivedEventArgs e) {
