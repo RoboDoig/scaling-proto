@@ -1,0 +1,13 @@
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\ScalingPlugins.dll
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\ScalingPlugins.pdb
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\DarkRift.dll
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\DarkRift.Server.dll
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\DarkRift.pdb
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\DarkRift.xml
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\DarkRift.Server.pdb
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\DarkRift.Server.xml
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.csprojAssemblyReference.cache
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.csproj.CoreCompileInputs.cache
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.csproj.CopyComplete
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.dll
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.pdb
