@@ -14,11 +14,14 @@ namespace ScalingPlugins
         public override bool ThreadSafe => false;
         public override Version Version => new Version(1, 0, 0);
         Dictionary<IClient, Player> players = new Dictionary<IClient, Player>();
+        public GameLift gameLiftServer;
 
         public PlayerManager(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
             ClientManager.ClientConnected += ClientConnected;
             ClientManager.ClientDisconnected += ClientDisconnected;
+
+            gameLiftServer = new GameLift();
         }
 
         void ClientConnected(object sender, ClientConnectedEventArgs e)

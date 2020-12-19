@@ -4,32 +4,48 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Aws.GameLift.Server;
+using Aws.GameLift;
 
 using DarkRift;
 using DarkRift.Server;
 
 namespace ScalingPlugins
 {
-    class GameLiftServer : Plugin
+    public class GameLift
     {
-        public override bool ThreadSafe => false;
-        public override Version Version => new Version(1, 0, 0);
+        // Set port that game service will listen on for incoming player connections
+        public int listeningPort = -1;
 
-        public GameLiftServer(PluginLoadData pluginLoadData) : base(pluginLoadData)
+        // Game preparation state
+        private bool gameSessionInfoReceived = false;
+        private float waitingForPlayerTime = 0f;
+
+        // Game state
+        private bool gameStarted = false;
+        private string gameSessionId;
+        public string GetGamSessionID() { return gameSessionId; }
+
+        public GameLift()
         {
-            // AWS testing - note that a GameLift server must be running (local build)
-            var listeningPort = 7777;
-            var initSDKOutcome = GameLiftServerAPI.InitSDK();
+            listeningPort = 7777;
 
+            //InitSDK establishes a local connection with the Amazon GameLift agent to enable 
+            //further communication.
+            var initSDKOutcome = GameLiftServerAPI.InitSDK();
             if (initSDKOutcome.Success)
             {
                 ProcessParameters processParameters = new ProcessParameters(
                     (gameSession) => {
                     //Respond to new game session activation request. GameLift sends activation request 
                     //to the game server along with a game session object containing game properties 
-                    //and other settings. Once the game server is ready to receive player connections, 
-                    //invoke GameLiftServerAPI.ActivateGameSession()
+                    //and other settings.
+
+                    // Activate the session
                     GameLiftServerAPI.ActivateGameSession();
+
+                    //Start waiting for players
+                    this.gameSessionInfoReceived = true;
+                        this.gameSessionId = gameSession.GameSessionId;
                     },
                     () => {
                     //OnProcessTerminate callback. GameLift invokes this callback before shutting down 
@@ -49,36 +65,29 @@ namespace ScalingPlugins
                     return true;
                     },
                     //Here, the game server tells GameLift what port it is listening on for incoming player 
-                    //connections. In this example, the port is hardcoded for simplicity. Active game
-                    //that are on the same instance must have unique ports.
+                    //connections. We will use the port received from command line arguments
                     listeningPort,
                     new LogParameters(new List<string>()
                     {
-                    //Here, the game server tells GameLift what set of files to upload when the game session ends.
-                    //GameLift uploads everything specified here for the developers to fetch later.
-                    "/local/game/logs/myserver.log"
+                    //Let GameLift know where our logs are stored. We are expecting the command line args to specify the server with the port in log file
+                    "/local/game/logs/myserver"+listeningPort+".log"
                     }));
 
-                //Calling ProcessReady tells GameLift this game server is ready to receive incoming game sessions!
+                //Calling ProcessReady tells GameLift this game server is ready to receive incoming game sessions
                 var processReadyOutcome = GameLiftServerAPI.ProcessReady(processParameters);
                 if (processReadyOutcome.Success)
                 {
-                    Console.Write("ProcessReady success.");
+                    Console.WriteLine("ProcessReady success.");
                 }
                 else
                 {
-                    Console.Write("ProcessReady failure : " + processReadyOutcome.Error.ToString());
+                    Console.WriteLine("ProcessReady failure : " + processReadyOutcome.Error.ToString());
                 }
             }
             else
             {
-                Console.Write("InitSDK failure : " + initSDKOutcome.Error.ToString());
+                Console.WriteLine("InitSDK failure : " + initSDKOutcome.Error.ToString());
             }
-        }
-
-        void OnApplicationQuit()
-        {
-            GameLiftServerAPI.ProcessEnding();
         }
     }
 }
