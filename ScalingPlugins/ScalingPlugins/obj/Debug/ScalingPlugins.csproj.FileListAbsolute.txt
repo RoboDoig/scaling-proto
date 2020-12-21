@@ -28,9 +28,6 @@ C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Deb
 C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\System.Memory.xml
 C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
 C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\System.Buffers.xml
-C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\AWSSDK.Core.dll
-C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\AWSSDK.GameLift.dll
-C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\AWSSDK.Core.pdb
-C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\AWSSDK.Core.xml
-C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\AWSSDK.GameLift.pdb
-C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\AWSSDK.GameLift.xml
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\Microsoft.Playfab.Gaming.GSDK.CSharp.dll
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\PlayFabAllSDK.dll
+C:\Users\erski\UnityProjects\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\Microsoft.Playfab.Gaming.GSDK.CSharp.pdb
