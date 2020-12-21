@@ -132,6 +132,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 109280270}
+  - component: {fileID: 109280269}
   m_Layer: 0
   m_Name: PlayfabClient
   m_TagString: Untagged
@@ -139,6 +140,18 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &109280269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 109280268}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ee1454f1b6bf804eb0325cea478b253, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &109280270
 Transform:
   m_ObjectHideFlags: 0
@@ -482,7 +495,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1389556948}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c6a21ea8d1f650340966421379ebc24d, type: 3}
+  m_Script: {fileID: 11500000, guid: 83c4161ea37a0ca4997e42c94be8e5d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   client: {fileID: 1389556950}
@@ -515,7 +528,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1651778455}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c17739abfb1cba245b2edbc776638185, type: 3}
+  m_Script: {fileID: 11500000, guid: 4c3b4d4a425019b40a5002887458a123, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   connectedPlayersPanel: {fileID: 1152601953}

@@ -4,18 +4,15 @@ using UnityEngine;
 using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
-using Amazon.GameLift;
 
 public class ClientNetworkManager : MonoBehaviour
 {
     [SerializeField]
     UnityClient client;
-    AmazonGameLiftClient gameLiftClient;
 
     public Dictionary<ushort, SimpleNetworkEntity> networkPlayers = new Dictionary<ushort, SimpleNetworkEntity>();
 
     void Awake() {
-        gameLiftClient = new AmazonGameLiftClient();
         client.MessageReceived += MessageReceived;
     }
 
