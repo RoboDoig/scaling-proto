@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using DarkRift;
 using DarkRift.Server;
 
+using Microsoft.Playfab.Gaming.GSDK.CSharp;
+
 namespace ScalingPlugins
 {
     public class NetworkManager : Plugin
@@ -17,8 +19,18 @@ namespace ScalingPlugins
 
         public NetworkManager(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
+            GameserverSDK.Start();
+
             ClientManager.ClientConnected += ClientConnected;
             ClientManager.ClientDisconnected += ClientDisconnected;
+
+            if (GameserverSDK.ReadyForPlayers())
+            {
+                // returns true on allocation call, player about to connect
+            } else
+            {
+                // returns false when server is being terminated
+            }
         }
 
         void ClientConnected(object sender, ClientConnectedEventArgs e)
