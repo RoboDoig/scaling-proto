@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using PlayFab;
 using PlayFab.ClientModels;
+using PlayFab.MultiplayerModels;
 
 public class PlayfabClient : MonoBehaviour
 {
@@ -21,7 +22,9 @@ public class PlayfabClient : MonoBehaviour
 
     private void OnLoginSuccess(LoginResult result)
     {
-        Debug.Log("Congratulations, you made your first successful API call!");
+        // Requesting multiplayer server
+        RequestMultiplayerServer();
+        
     }
 
     private void OnLoginFailure(PlayFabError error)
@@ -30,4 +33,23 @@ public class PlayfabClient : MonoBehaviour
         Debug.LogError("Here's some debug information:");
         Debug.LogError(error.GenerateErrorReport());
     }
+
+    private void RequestMultiplayerServer() {
+        RequestMultiplayerServerRequest requestData = new RequestMultiplayerServerRequest();
+        requestData.BuildId = "00000000-0000-0000-0000-000000000000";
+        requestData.SessionId = System.Guid.NewGuid().ToString();
+        requestData.PreferredRegions = new List<string> {"WestUs"};
+        PlayFabMultiplayerAPI.RequestMultiplayerServer(requestData, OnRequestMultiplayerServer, OnRequestMultiplayerServerError);
+    }
+
+    private void OnRequestMultiplayerServer(RequestMultiplayerServerResponse response)
+	{
+		Debug.Log(response.ToString());
+	}
+
+    private void OnRequestMultiplayerServerError(PlayFabError error)
+	{
+        Debug.Log("ERROR SERVER REQUEST");
+		Debug.Log(error.GenerateErrorReport());
+	}
 }

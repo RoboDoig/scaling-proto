@@ -16,6 +16,7 @@ namespace ScalingPlugins
         public override bool ThreadSafe => false;
         public override Version Version => new Version(1, 0, 0);
         Dictionary<IClient, Player> players = new Dictionary<IClient, Player>();
+        List<ConnectedPlayer> pfPlayers = new List<ConnectedPlayer>();
 
         public NetworkManager(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -59,6 +60,10 @@ namespace ScalingPlugins
                 Message playerMessage = Message.Create(Tags.PlayerConnectTag, player);
                 e.Client.SendMessage(playerMessage, SendMode.Reliable);
             }
+
+            // Tell PlayFab about this player
+            pfPlayers.Add(new ConnectedPlayer(newPlayer.playerName));
+            GameserverSDK.UpdateConnectedPlayers(pfPlayers);
 
             e.Client.MessageReceived += OnMessage;
         }
