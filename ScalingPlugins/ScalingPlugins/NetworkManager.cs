@@ -25,6 +25,8 @@ namespace ScalingPlugins
             ClientManager.ClientConnected += ClientConnected;
             ClientManager.ClientDisconnected += ClientDisconnected;
 
+            GameserverSDK.RegisterShutdownCallback(OnShutdown);
+
             if (GameserverSDK.ReadyForPlayers())
             {
                 // returns true on allocation call, player about to connect
@@ -32,6 +34,11 @@ namespace ScalingPlugins
             {
                 // returns false when server is being terminated
             }
+        }
+
+        void OnShutdown()
+        {
+            Environment.Exit(1); // Is this the best way to do this?
         }
 
         void ClientConnected(object sender, ClientConnectedEventArgs e)
