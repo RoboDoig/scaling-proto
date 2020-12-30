@@ -16,7 +16,7 @@ public class PlayfabClient : MonoBehaviour
             */
             PlayFabSettings.staticSettings.TitleId = "6A3B8";
         }
-        var request = new LoginWithCustomIDRequest { CustomId = "GettingStartedGuide", CreateAccount = true};
+        var request = new LoginWithCustomIDRequest { CustomId = "Andrew", CreateAccount = true};
         PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnLoginFailure);
     }
 
@@ -24,7 +24,6 @@ public class PlayfabClient : MonoBehaviour
     {
         // Requesting multiplayer server
         RequestMultiplayerServer();
-        
     }
 
     private void OnLoginFailure(PlayFabError error)
@@ -36,9 +35,9 @@ public class PlayfabClient : MonoBehaviour
 
     private void RequestMultiplayerServer() {
         RequestMultiplayerServerRequest requestData = new RequestMultiplayerServerRequest();
-        requestData.BuildId = "00000000-0000-0000-0000-000000000000";
+        requestData.BuildId = "75696de3-25a9-47a9-ac19-795c261bd57b";
         requestData.SessionId = System.Guid.NewGuid().ToString();
-        requestData.PreferredRegions = new List<string> {"WestUs"};
+        requestData.PreferredRegions = new List<string> {"EastUs"};
         PlayFabMultiplayerAPI.RequestMultiplayerServer(requestData, OnRequestMultiplayerServer, OnRequestMultiplayerServerError);
     }
 

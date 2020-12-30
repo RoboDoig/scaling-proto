@@ -26,6 +26,7 @@ namespace ScalingPlugins
             ClientManager.ClientDisconnected += ClientDisconnected;
 
             GameserverSDK.RegisterShutdownCallback(OnShutdown);
+            ReadyForPlayers();
 
             if (GameserverSDK.ReadyForPlayers())
             {
@@ -34,6 +35,12 @@ namespace ScalingPlugins
             {
                 // returns false when server is being terminated
             }
+        }
+
+        async void ReadyForPlayers()
+        {
+            await Task.Delay(1);
+            GameserverSDK.ReadyForPlayers();
         }
 
         void OnShutdown()
