@@ -26,7 +26,7 @@ namespace ScalingPlugins
             ClientManager.ClientDisconnected += ClientDisconnected;
 
             GameserverSDK.RegisterShutdownCallback(OnShutdown);
-            ReadyForPlayers();
+            //ReadyForPlayers();
 
             if (GameserverSDK.ReadyForPlayers())
             {

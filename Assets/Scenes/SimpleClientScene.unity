@@ -147,7 +147,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 109280268}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0ee1454f1b6bf804eb0325cea478b253, type: 3}
   m_Name: 
@@ -462,11 +462,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   host: 127.0.0.1
-  port: 4296
+  port: 56100
   noDelay: 0
-  autoConnect: 1
+  autoConnect: 0
   invokeFromDispatcher: 1
-  sniffData: 0
+  sniffData: 1
   objectCacheSettings:
     maxWriters: 2
     maxReaders: 2
