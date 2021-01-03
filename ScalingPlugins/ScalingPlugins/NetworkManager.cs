@@ -17,6 +17,7 @@ namespace ScalingPlugins
         public override Version Version => new Version(1, 0, 0);
         Dictionary<IClient, Player> players = new Dictionary<IClient, Player>();
         List<ConnectedPlayer> pfPlayers = new List<ConnectedPlayer>();
+        DateTime startDateTime;
 
         public NetworkManager(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -26,7 +27,8 @@ namespace ScalingPlugins
             ClientManager.ClientDisconnected += ClientDisconnected;
 
             GameserverSDK.RegisterShutdownCallback(OnShutdown);
-            //ReadyForPlayers();
+            GameserverSDK.RegisterHealthCallback(OnHealthCheck);
+            startDateTime = DateTime.Now;
 
             if (GameserverSDK.ReadyForPlayers())
             {
@@ -37,15 +39,25 @@ namespace ScalingPlugins
             }
         }
 
-        async void ReadyForPlayers()
-        {
-            await Task.Delay(1);
-            GameserverSDK.ReadyForPlayers();
-        }
-
         void OnShutdown()
         {
             Environment.Exit(1); // Is this the best way to do this?
+        }
+
+        bool OnHealthCheck()
+        {
+            // How long has server been active in minutes?
+            float awakeTime = (float)(DateTime.Now - startDateTime).TotalSeconds;
+            Console.WriteLine(awakeTime);
+
+            // If server has been awake for over 2 mins, and no players connected, begin shutdown
+            if (awakeTime > 30f && players.Count <= 0)
+            {
+                OnShutdown();
+                return false;
+            }
+
+            return true;
         }
 
         void ClientConnected(object sender, ClientConnectedEventArgs e)

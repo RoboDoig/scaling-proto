@@ -6,37 +6,34 @@ using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.MultiplayerModels;
 
-public class WelcomeManager : MonoBehaviour
+public class NetworkStarter : MonoBehaviour
 {
-
-    public string buildID;
+    // PlayFab settings
+    public string titleId;
     public string region;
-    public string titleID;
+    public string buildId;
 
-    private GameObject mainCanvas;
-    private InputField inputField;
-    private Button startButton;
+    // UI i/o components
+    public InputField nameInputField;
+    public Button startSessionButton;
+    public VerticalLayoutGroup connectedPlayersGroup;
+    public Button readyButton;
 
     // Start is called before the first frame update
     void Start()
     {
-        // Get the scene UI components for player name and start button
-        mainCanvas = GameObject.FindGameObjectWithTag("MainCanvas");
-        inputField = mainCanvas.GetComponentInChildren<InputField>();
-        startButton = mainCanvas.GetComponentInChildren<Button>();
-
         // Link start button click to StartSession method
-        startButton.onClick.AddListener(StartSession);
+        startSessionButton.onClick.AddListener(StartSession);
     }
 
     public void StartSession() {
-        string clientName = inputField.text;
+        string clientName = nameInputField.text;
 
         // First attempt to login
         var request = new LoginWithCustomIDRequest { CustomId = clientName, CreateAccount = true};
         PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnLoginFailure);
 
-        startButton.interactable = false;
+        startSessionButton.interactable = false;
     }
 
     private void OnLoginSuccess(LoginResult result) {
@@ -83,10 +80,7 @@ public class WelcomeManager : MonoBehaviour
     }
 
     private void OnMatchmakingTicketCreated(CreateMatchmakingTicketResult createMatchmakingTicketResult) {
-        // If matchmaking is successful...
-        Debug.Log("Matchmaking request sent");
-        Debug.Log(createMatchmakingTicketResult.TicketId);
-        startButton.GetComponentInChildren<Text>().text = "Matchmaking request sent";
+        startSessionButton.GetComponentInChildren<Text>().text = "Matchmaking request sent";
 
         // Now we need to start polling the ticket
         StartCoroutine(PollMatchmakingTicket(createMatchmakingTicketResult.TicketId));
@@ -115,16 +109,15 @@ public class WelcomeManager : MonoBehaviour
     }
 
     private void OnGetMatchmakingTicket(GetMatchmakingTicketResult getMatchmakingTicketResult) {
-        Debug.Log(getMatchmakingTicketResult.Status);
-        startButton.GetComponentInChildren<Text>().text = getMatchmakingTicketResult.Status;
+        startSessionButton.GetComponentInChildren<Text>().text = getMatchmakingTicketResult.Status;
 
         if (getMatchmakingTicketResult.Status == "Matched") {
             // If we found a match, we then need to access its server
             MatchFound(getMatchmakingTicketResult);
         } else if (getMatchmakingTicketResult.Status == "Canceled") {
             // If the matchmaking ticket was canceled
-            startButton.interactable = false;
-            startButton.GetComponentInChildren<Text>().text = "Start Session";
+            startSessionButton.interactable = false;
+            startSessionButton.GetComponentInChildren<Text>().text = "Start Session";
         } else {
             // else we keep polling the ticket
             StartCoroutine(PollMatchmakingTicket(getMatchmakingTicketResult.TicketId));
