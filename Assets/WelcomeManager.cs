@@ -46,6 +46,7 @@ public class WelcomeManager : MonoBehaviour
         StartMatchmakingRequest(result.EntityToken.Entity.Id, result.EntityToken.Entity.Type);
     }
 
+    // TODO - all these error handlers do basically the same thing so far, maybe they can be consolidated
     private void OnLoginFailure(PlayFabError error) {
         // If login fails, debug log an error report
         Debug.Log(error.GenerateErrorReport());
@@ -89,7 +90,7 @@ public class WelcomeManager : MonoBehaviour
         Debug.Log(createMatchmakingTicketResult.TicketId);
 
         // Now we need to start polling the ticket
-        PollMatchmakingTicket(createMatchmakingTicketResult.TicketId);
+        StartCoroutine(PollMatchmakingTicket(createMatchmakingTicketResult.TicketId));
     }
 
     private void OnMatchmakingError(PlayFabError error) {
@@ -97,19 +98,34 @@ public class WelcomeManager : MonoBehaviour
         Debug.Log(error.GenerateErrorReport());
     }
 
-    private void PollMatchmakingTicket(string ticketId) {
+    private IEnumerator PollMatchmakingTicket(string ticketId) {
+        // Delay ticket request
+        yield return new WaitForSeconds(10);
+
+        // Poll the ticket
         PlayFabMultiplayerAPI.GetMatchmakingTicket(
             new GetMatchmakingTicketRequest {
                 TicketId = ticketId,
                 QueueName = "standard_queue"
             },
 
+            // callbacks
             this.OnGetMatchmakingTicket,
             this.OnMatchmakingError
         );
     }
 
     private void OnGetMatchmakingTicket(GetMatchmakingTicketResult getMatchmakingTicketRequest) {
+        Debug.Log(getMatchmakingTicketRequest.Status);
+        if (getMatchmakingTicketRequest.Status == "Matched") {
+            // If we found a match, we then need to access its server
+        } else {
+            // else we keep polling the ticket
+            StartCoroutine(PollMatchmakingTicket(getMatchmakingTicketRequest.TicketId));
+        }
+    }
 
+    private void MatchFound() {
+        
     }
 }
