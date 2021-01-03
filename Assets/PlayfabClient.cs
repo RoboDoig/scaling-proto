@@ -7,7 +7,7 @@ using PlayFab.MultiplayerModels;
 
 public class PlayfabClient : MonoBehaviour
 {
-    private string buildID = "4f609eea-dc1f-466b-847a-8ea1d29cd0a1";
+    private string buildID = "30bd1df9-6914-4c6a-a653-f64b6f6e41ad";
     private string region = "EastUs";
 
     public void Start()
@@ -69,7 +69,10 @@ public class PlayfabClient : MonoBehaviour
 	{
 		Debug.Log(response.ToString());
         Debug.Log(response.IPV4Address);
-        Debug.Log(response.Ports[0].Num);
+        foreach (Port port in response.Ports) {
+            Debug.Log(port.Num);
+            Debug.Log(port.Name);
+        }
         Debug.Log(response.Region);
 	}
 

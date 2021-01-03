@@ -14,7 +14,7 @@ public class ClientNetworkManager : MonoBehaviour
 
     void Awake() {
         client.MessageReceived += MessageReceived;
-        client.ConnectInBackground(client.Host, 56100, 56101, true, null);
+        client.ConnectInBackground(client.Host, 30001, 30101, true, null);
     }
 
     void MessageReceived(object sender, MessageReceivedEventArgs e) {
