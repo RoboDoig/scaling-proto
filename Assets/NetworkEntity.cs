@@ -5,4 +5,5 @@ using UnityEngine;
 public class NetworkEntity : MonoBehaviour
 {
     public ushort networkID;
+    public string playerName;
 }
