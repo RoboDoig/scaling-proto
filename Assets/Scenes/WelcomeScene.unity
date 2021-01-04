@@ -901,6 +901,7 @@ MonoBehaviour:
   titleId: 6A3B8
   region: EastUs
   buildId: 3fa78d95-8787-4cad-9477-cef5cca8159c
+  drClient: {fileID: 1424506734}
   nameInputField: {fileID: 507291525}
   startSessionButton: {fileID: 1754191592}
   connectedPlayersGroup: {fileID: 95768238}

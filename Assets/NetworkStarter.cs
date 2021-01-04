@@ -1,10 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Net;
 using UnityEngine;
 using UnityEngine.UI;
 using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.MultiplayerModels;
+using DarkRift;
+using DarkRift.Client.Unity;
 
 public class NetworkStarter : MonoBehaviour
 {
@@ -12,6 +15,9 @@ public class NetworkStarter : MonoBehaviour
     public string titleId;
     public string region;
     public string buildId;
+
+    // DarkRift
+    private UnityClient drClient;
 
     // UI i/o components
     public InputField nameInputField;
@@ -24,6 +30,9 @@ public class NetworkStarter : MonoBehaviour
     {
         // Link start button click to StartSession method
         startSessionButton.onClick.AddListener(StartSession);
+
+        // Link to DR client
+        drClient = GetComponent<UnityClient>();
     }
 
     public void StartSession() {
@@ -138,12 +147,21 @@ public class NetworkStarter : MonoBehaviour
 
     private void OnGetMatch(GetMatchResult getMatchResult) {
         // Get the server to join
-        Debug.Log(getMatchResult.ServerDetails.IPV4Address);
+        string ipString = getMatchResult.ServerDetails.IPV4Address;
+        int tcpPort = 0;
+        int udpPort = 0;
 
         // Get the ports and names to join
         foreach (Port port in getMatchResult.ServerDetails.Ports) {
-            Debug.Log(port.Name);
-            Debug.Log(port.Num);
+            if (port.Name == "gg_tcp")
+                tcpPort = port.Num;
+
+            if (port.Name == "gg_udp")
+                udpPort = port.Num;
         }
+
+        // Connect and initialize the DarkRiftClient
+        if (tcpPort != 0 && udpPort != 0)
+            drClient.ConnectInBackground(IPAddress.Parse(ipString), tcpPort, udpPort, true, null);
     }
 }
