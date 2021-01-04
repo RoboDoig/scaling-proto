@@ -18,6 +18,7 @@ namespace ScalingPlugins
         Dictionary<IClient, Player> players = new Dictionary<IClient, Player>();
         List<ConnectedPlayer> pfPlayers = new List<ConnectedPlayer>();
         DateTime startDateTime;
+        bool sessionIdAssigned;
 
         public NetworkManager(PluginLoadData pluginLoadData) : base(pluginLoadData)
         {
@@ -28,7 +29,7 @@ namespace ScalingPlugins
 
             GameserverSDK.RegisterShutdownCallback(OnShutdown);
             GameserverSDK.RegisterHealthCallback(OnHealthCheck);
-            startDateTime = DateTime.Now;
+            sessionIdAssigned = false;
 
             if (GameserverSDK.ReadyForPlayers())
             {
@@ -46,12 +47,38 @@ namespace ScalingPlugins
 
         bool OnHealthCheck()
         {
-            // How long has server been active in minutes?
-            float awakeTime = (float)(DateTime.Now - startDateTime).TotalSeconds;
+            // How long has server been active in seconds?
+            float awakeTime;
+
+            if (!sessionIdAssigned)
+            {
+                awakeTime = 0f;
+            } else
+            {
+                awakeTime = (float)(DateTime.Now - startDateTime).TotalSeconds;
+            }
+
+            // Get server info
+            // If session ID has been assigned, server is active
+            string sessionIdCheck = null;
+            IDictionary<string, string> config = GameserverSDK.getConfigSettings();
+            if (config.TryGetValue(GameserverSDK.SessionIdKey, out string sessionId))
+            {
+                sessionIdCheck = sessionId;
+                
+                // If this is the first session assignment, start the activated timer
+                if (!sessionIdAssigned)
+                {
+                    startDateTime = DateTime.Now;
+                    sessionIdAssigned = true;
+                }
+            }
+
+            Console.WriteLine(sessionIdAssigned);
             Console.WriteLine(awakeTime);
 
-            // If server has been awake for over 2 mins, and no players connected, begin shutdown
-            if (awakeTime > 30f && players.Count <= 0)
+            // If server has been awake for over 2 mins, and no players connected, and the PlayFab server is not in standby (no session id assigned): begin shutdown
+            if (awakeTime > 120f && players.Count <= 0 && sessionIdAssigned)
             {
                 OnShutdown();
                 return false;

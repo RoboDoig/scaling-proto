@@ -18,8 +18,8 @@ C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins
 C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\Microsoft.Playfab.Gaming.GSDK.CSharp.dll
 C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\Newtonsoft.Json.dll
 C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins\bin\Debug\Newtonsoft.Json.xml
-C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.csprojAssemblyReference.cache
 C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.csproj.CoreCompileInputs.cache
 C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.csproj.CopyComplete
 C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.dll
 C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.pdb
+C:\Users\erski\Documents\AndrewRepos\scaling-proto\ScalingPlugins\ScalingPlugins\obj\Debug\ScalingPlugins.csprojAssemblyReference.cache

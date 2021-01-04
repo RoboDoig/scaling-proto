@@ -116,7 +116,7 @@ public class NetworkStarter : MonoBehaviour
             MatchFound(getMatchmakingTicketResult);
         } else if (getMatchmakingTicketResult.Status == "Canceled") {
             // If the matchmaking ticket was canceled
-            startSessionButton.interactable = false;
+            startSessionButton.interactable = true;
             startSessionButton.GetComponentInChildren<Text>().text = "Start Session";
         } else {
             // else we keep polling the ticket
