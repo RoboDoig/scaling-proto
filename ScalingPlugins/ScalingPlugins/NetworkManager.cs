@@ -16,7 +16,7 @@ namespace ScalingPlugins
         public override bool ThreadSafe => false;
         public override Version Version => new Version(1, 0, 0);
         Dictionary<IClient, Player> players = new Dictionary<IClient, Player>();
-        List<ConnectedPlayer> pfPlayers = new List<ConnectedPlayer>();
+        Dictionary<IClient, ConnectedPlayer> pfPlayers = new Dictionary<IClient, ConnectedPlayer>();
         DateTime startDateTime;
         bool sessionIdAssigned;
 
@@ -93,6 +93,9 @@ namespace ScalingPlugins
             Player newPlayer = new Player(e.Client.ID, RandomString(6, false));
             players.Add(e.Client, newPlayer);
 
+            // Reset server clock
+            startDateTime = DateTime.Now;
+
             // Write player data and tell other connected clients about this player
             using (DarkRiftWriter newPlayerWriter = DarkRiftWriter.Create())
             {
@@ -114,9 +117,15 @@ namespace ScalingPlugins
                 e.Client.SendMessage(playerMessage, SendMode.Reliable);
             }
 
-            // Tell PlayFab about this player
-            pfPlayers.Add(new ConnectedPlayer(newPlayer.playerName));
-            GameserverSDK.UpdateConnectedPlayers(pfPlayers);
+            // Tell PlayFab about this player - TODO this is repeated in client disconnected
+            pfPlayers.Add(e.Client, new ConnectedPlayer(newPlayer.playerName));
+
+            List<ConnectedPlayer> listPfPlayers = new List<ConnectedPlayer>();
+            foreach (KeyValuePair<IClient, ConnectedPlayer> pfPlayer in pfPlayers)
+            {
+                listPfPlayers.Add(pfPlayer.Value);
+            }
+            GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
 
             e.Client.MessageReceived += OnMessage;
         }
@@ -124,6 +133,7 @@ namespace ScalingPlugins
         void ClientDisconnected(object sender, ClientDisconnectedEventArgs e)
         {
             players.Remove(e.Client);
+            pfPlayers.Remove(e.Client);
 
             using (DarkRiftWriter writer = DarkRiftWriter.Create())
             {
@@ -137,6 +147,15 @@ namespace ScalingPlugins
                     }
                 }
             }
+
+            // Update playfabs player list - TODO this is repeated in client connected
+            List<ConnectedPlayer> listPfPlayers = new List<ConnectedPlayer>();
+            foreach (KeyValuePair<IClient, ConnectedPlayer> pfPlayer in pfPlayers)
+            {
+                listPfPlayers.Add(pfPlayer.Value);
+            }
+
+            GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
         }
 
         string RandomString(int size, bool lowerCase)
