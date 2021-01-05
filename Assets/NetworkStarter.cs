@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using System.Net;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,6 +8,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.MultiplayerModels;
 using DarkRift;
+using DarkRift.Client;
 using DarkRift.Client.Unity;
 
 public class NetworkStarter : MonoBehaviour
@@ -20,29 +22,51 @@ public class NetworkStarter : MonoBehaviour
     private UnityClient drClient;
 
     // UI i/o components
-    public InputField nameInputField;
-    public Button startSessionButton;
-    public VerticalLayoutGroup connectedPlayersGroup;
-    public Button readyButton;
+    private UIManager uiManager;
 
     // Start is called before the first frame update
     void Start()
     {
+        // Get reference to UI singleton
+        uiManager = UIManager.singleton;
+
         // Link start button click to StartSession method
-        startSessionButton.onClick.AddListener(StartSession);
+        uiManager.startSessionButton.onClick.AddListener(StartSession);
+        uiManager.localTestButton.onClick.AddListener(StartLocalSession);
 
         // Link to DR client
         drClient = GetComponent<UnityClient>();
     }
 
     public void StartSession() {
-        string clientName = nameInputField.text;
+        string clientName = uiManager.nameInputField.text;
 
         // First attempt to login
         var request = new LoginWithCustomIDRequest { CustomId = clientName, CreateAccount = true};
         PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnLoginFailure);
 
-        startSessionButton.interactable = false;
+        uiManager.startSessionButton.interactable = false;
+        uiManager.localTestButton.interactable = false;
+        uiManager.nameInputField.interactable = false;
+    }
+
+    // Connect with local test server
+    public void StartLocalSession() {
+        drClient.ConnectInBackground(IPAddress.Parse("127.0.0.1"), 7777, 7777, true, delegate {OnLocalSessionCallback();} );
+
+        uiManager.startSessionButton.interactable = false;
+        uiManager.localTestButton.interactable = false;
+        uiManager.nameInputField.interactable = false;
+    }
+
+    public void OnLocalSessionCallback() {
+        if (drClient.ConnectionState == ConnectionState.Connected) {
+            uiManager.readyButton.interactable = true;
+        } else {
+            uiManager.startSessionButton.interactable = true;
+            uiManager.localTestButton.interactable = true;
+            uiManager.nameInputField.interactable = true;
+        }
     }
 
     private void OnLoginSuccess(LoginResult result) {
@@ -89,7 +113,7 @@ public class NetworkStarter : MonoBehaviour
     }
 
     private void OnMatchmakingTicketCreated(CreateMatchmakingTicketResult createMatchmakingTicketResult) {
-        startSessionButton.GetComponentInChildren<Text>().text = "Matchmaking request sent";
+        uiManager.startSessionButton.GetComponentInChildren<Text>().text = "Matchmaking request sent";
 
         // Now we need to start polling the ticket
         StartCoroutine(PollMatchmakingTicket(createMatchmakingTicketResult.TicketId));
@@ -118,15 +142,17 @@ public class NetworkStarter : MonoBehaviour
     }
 
     private void OnGetMatchmakingTicket(GetMatchmakingTicketResult getMatchmakingTicketResult) {
-        startSessionButton.GetComponentInChildren<Text>().text = getMatchmakingTicketResult.Status;
+        uiManager.startSessionButton.GetComponentInChildren<Text>().text = getMatchmakingTicketResult.Status;
 
         if (getMatchmakingTicketResult.Status == "Matched") {
             // If we found a match, we then need to access its server
             MatchFound(getMatchmakingTicketResult);
         } else if (getMatchmakingTicketResult.Status == "Canceled") {
             // If the matchmaking ticket was canceled
-            startSessionButton.interactable = true;
-            startSessionButton.GetComponentInChildren<Text>().text = "Start Session";
+            uiManager.startSessionButton.interactable = true;
+            uiManager.localTestButton.interactable = true;
+            uiManager.nameInputField.interactable = true;
+            uiManager.startSessionButton.GetComponentInChildren<Text>().text = "Start Session";
         } else {
             // else we keep polling the ticket
             StartCoroutine(PollMatchmakingTicket(getMatchmakingTicketResult.TicketId));
@@ -160,7 +186,7 @@ public class NetworkStarter : MonoBehaviour
                 udpPort = port.Num;
         }
 
-        // Connect and initialize the DarkRiftClient
+        // Connect and initialize the DarkRiftClient, hand over control to the NetworkManager
         if (tcpPort != 0 && udpPort != 0)
             drClient.ConnectInBackground(IPAddress.Parse(ipString), tcpPort, udpPort, true, null);
     }
