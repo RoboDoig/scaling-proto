@@ -11,6 +11,7 @@ using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 
+// This class should probably be called network interface or something - TODO
 public class NetworkStarter : MonoBehaviour
 {
     // PlayFab settings
@@ -20,6 +21,7 @@ public class NetworkStarter : MonoBehaviour
 
     // DarkRift
     private UnityClient drClient;
+    private NetworkManager networkManager;
 
     // UI i/o components
     private UIManager uiManager;
@@ -29,10 +31,12 @@ public class NetworkStarter : MonoBehaviour
     {
         // Get reference to UI singleton
         uiManager = UIManager.singleton;
+        networkManager = GetComponent<NetworkManager>();
 
         // Link start button click to StartSession method
         uiManager.startSessionButton.onClick.AddListener(StartSession);
         uiManager.localTestButton.onClick.AddListener(StartLocalSession);
+        uiManager.readyButton.onClick.AddListener(SetPlayerReady);
 
         // Link to DR client
         drClient = GetComponent<UnityClient>();
@@ -67,6 +71,11 @@ public class NetworkStarter : MonoBehaviour
             uiManager.localTestButton.interactable = true;
             uiManager.nameInputField.interactable = true;
         }
+    }
+
+    public void SetPlayerReady() {
+        // When player clicks ready, tell the server
+        networkManager.SendPlayerReadyMessage(true);
     }
 
     private void OnLoginSuccess(LoginResult result) {

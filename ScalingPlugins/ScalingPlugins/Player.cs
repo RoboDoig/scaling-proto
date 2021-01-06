@@ -12,6 +12,7 @@ namespace ScalingPlugins
     {
         public ushort ID { get; set; }
         public string playerName { get; set; }
+        public bool isReady { get; set; }
 
         public Player()
         {
@@ -22,6 +23,7 @@ namespace ScalingPlugins
         {
             ID = _ID;
             playerName = _playerName;
+            isReady = false;
         }
 
         public void Deserialize(DeserializeEvent e)

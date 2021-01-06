@@ -127,7 +127,7 @@ namespace ScalingPlugins
             }
             GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
 
-            e.Client.MessageReceived += OnMessage;
+            e.Client.MessageReceived += OnPlayerReadyMessage;
         }
 
         void ClientDisconnected(object sender, ClientDisconnectedEventArgs e)
@@ -156,6 +156,51 @@ namespace ScalingPlugins
             }
 
             GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
+        }
+
+        void OnPlayerReadyMessage(object sender, MessageReceivedEventArgs e)
+        {
+            using (Message message = e.GetMessage() as Message)
+            {
+                if (message.Tag == Tags.PlayerSetReadyTag)
+                {
+                    Console.WriteLine("Player Ready Received");
+                    using (DarkRiftReader reader = message.GetReader())
+                    {
+                        ushort clientID = reader.ReadUInt16();
+                        bool isReady = reader.ReadBoolean();
+
+                        // Update player ready status and check if all players are ready
+                        players[ClientManager.GetClient(clientID)].isReady = isReady;
+                        CheckAllReady();
+
+                    }
+                }
+            }
+        }
+
+        void CheckAllReady()
+        {
+            // Check all clients, if any not ready, then return
+            foreach (IClient client in ClientManager.GetAllClients())
+            {
+                if (!players[client].isReady)
+                {
+                    return;
+                }
+            }
+
+            // If all are ready, broadcast start game to all clients
+            using (DarkRiftWriter writer = DarkRiftWriter.Create())
+            {
+                using (Message message = Message.Create(Tags.StartGameTag, writer))
+                {
+                    foreach (IClient client in ClientManager.GetAllClients())
+                    {
+                        client.SendMessage(message, SendMode.Reliable);
+                    }
+                }
+            }
         }
 
         string RandomString(int size, bool lowerCase)
