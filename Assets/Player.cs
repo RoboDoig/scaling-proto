@@ -4,25 +4,24 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    public float moveSpeed = 2f;
+    public bool controllable = false;
+    public float moveSpeed = 8f;
     float hMove;
     float vMove;
     Vector3 motion;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
     // Update is called once per frame
     void Update()
     {
-        hMove = Input.GetAxis("Horizontal");
-        vMove = Input.GetAxis("Vertical");
+        if (controllable) {
+            hMove = Input.GetAxis("Horizontal");
+            vMove = Input.GetAxis("Vertical");
 
-        motion = new Vector3(hMove, 0f, vMove).normalized * Time.deltaTime * moveSpeed;
+            motion = new Vector3(hMove, 0f, vMove).normalized * Time.deltaTime * moveSpeed;
 
-        transform.position = transform.position + motion;
+            transform.position += motion;
+
+            NetworkManager.singleton.SendPlayerMoveMessage(transform.position);
+        }
     }
 }

@@ -77,8 +77,8 @@ namespace ScalingPlugins
             Console.WriteLine(sessionIdAssigned);
             Console.WriteLine(awakeTime);
 
-            // If server has been awake for over 2 mins, and no players connected, and the PlayFab server is not in standby (no session id assigned): begin shutdown
-            if (awakeTime > 120f && players.Count <= 0 && sessionIdAssigned)
+            // If server has been awake for over 10 mins, and no players connected, and the PlayFab server is not in standby (no session id assigned): begin shutdown
+            if (awakeTime > 600f && players.Count <= 0 && sessionIdAssigned)
             {
                 OnShutdown();
                 return false;
@@ -127,7 +127,9 @@ namespace ScalingPlugins
             }
             GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
 
-            e.Client.MessageReceived += OnMessage;
+            e.Client.MessageReceived += OnPlayerMoveMessage;
+            e.Client.MessageReceived += OnPlayerReadyMessage;
+            e.Client.MessageReceived += OnPlayerInformationMessage;
         }
 
         void ClientDisconnected(object sender, ClientDisconnectedEventArgs e)
@@ -156,6 +158,119 @@ namespace ScalingPlugins
             }
 
             GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
+        }
+
+        void OnPlayerMoveMessage(object sender, MessageReceivedEventArgs e)
+        {
+            using (Message message = e.GetMessage() as Message)
+            {
+                if (message.Tag == Tags.PlayerMoveTag)
+                {
+                    using (DarkRiftReader reader = message.GetReader())
+                    {
+                        float newX = reader.ReadSingle();
+                        float newY = reader.ReadSingle();
+                        float newZ = reader.ReadSingle();
+
+                        Player player = players[e.Client];
+
+                        player.X = newX;
+                        player.Y = newY;
+                        player.Z = newZ;
+
+                        // send this player's updated position back to all clients except the client that sent the message
+                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                        {
+                            writer.Write(player.ID);
+                            writer.Write(player.X);
+                            writer.Write(player.Y);
+                            writer.Write(player.Z);
+
+                            message.Serialize(writer);
+                        }
+
+                        foreach (IClient client in ClientManager.GetAllClients().Where(x => x != e.Client))
+                            client.SendMessage(message, e.SendMode);
+                    }
+                }
+            }
+        }
+
+        // Basically the same as OnPlayerInformationMessage - TODO
+        void OnPlayerReadyMessage(object sender, MessageReceivedEventArgs e)
+        {
+            using (Message message = e.GetMessage() as Message)
+            {
+                if (message.Tag == Tags.PlayerSetReadyTag)
+                {
+                    using (DarkRiftReader reader = message.GetReader())
+                    {
+                        ushort clientID = reader.ReadUInt16();
+                        bool isReady = reader.ReadBoolean();
+
+                        // Update player ready status and check if all players are ready
+                        players[ClientManager.GetClient(clientID)].isReady = isReady;
+                        CheckAllReady();
+
+                    }
+                }
+            }
+        }
+
+        void OnPlayerInformationMessage(object sender, MessageReceivedEventArgs e)
+        {
+            using (Message message = e.GetMessage() as Message)
+            {
+                if (message.Tag == Tags.PlayerInformationTag)
+                {
+                    using (DarkRiftReader reader = message.GetReader())
+                    {
+                        ushort clientID = reader.ReadUInt16();
+                        string playerName = reader.ReadString();
+
+                        // Update player information
+                        players[ClientManager.GetClient(clientID)].playerName = playerName;
+
+                        // Update all players
+                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                        {
+                            writer.Write(clientID);
+                            writer.Write(playerName);
+
+                            message.Serialize(writer);
+                        }
+
+                        foreach(IClient client in ClientManager.GetAllClients())
+                        {
+                            client.SendMessage(message, e.SendMode);
+                        }
+                    }
+                }
+            }
+        }
+
+        void CheckAllReady()
+        {
+            // Check all clients, if any not ready, then return
+            foreach (IClient client in ClientManager.GetAllClients())
+            {
+                if (!players[client].isReady)
+                {
+                    return;
+                }
+            }
+
+            // If all are ready, broadcast start game to all clients
+            using (DarkRiftWriter writer = DarkRiftWriter.Create())
+            {
+                using (Message message = Message.Create(Tags.StartGameTag, writer))
+                {
+                    foreach (IClient client in ClientManager.GetAllClients())
+                    {
+                        client.SendMessage(message, SendMode.Reliable);
+                    }
+                }
+            }
         }
 
         string RandomString(int size, bool lowerCase)
