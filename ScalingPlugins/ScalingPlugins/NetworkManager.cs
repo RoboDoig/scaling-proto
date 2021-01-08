@@ -127,6 +127,7 @@ namespace ScalingPlugins
             }
             GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
 
+            e.Client.MessageReceived += OnPlayerMoveMessage;
             e.Client.MessageReceived += OnPlayerReadyMessage;
             e.Client.MessageReceived += OnPlayerInformationMessage;
         }
@@ -157,6 +158,42 @@ namespace ScalingPlugins
             }
 
             GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
+        }
+
+        void OnPlayerMoveMessage(object sender, MessageReceivedEventArgs e)
+        {
+            using (Message message = e.GetMessage() as Message)
+            {
+                if (message.Tag == Tags.PlayerMoveTag)
+                {
+                    using (DarkRiftReader reader = message.GetReader())
+                    {
+                        float newX = reader.ReadSingle();
+                        float newY = reader.ReadSingle();
+                        float newZ = reader.ReadSingle();
+
+                        Player player = players[e.Client];
+
+                        player.X = newX;
+                        player.Y = newY;
+                        player.Z = newZ;
+
+                        // send this player's updated position back to all clients except the client that sent the message
+                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                        {
+                            writer.Write(player.ID);
+                            writer.Write(player.X);
+                            writer.Write(player.Y);
+                            writer.Write(player.Z);
+
+                            message.Serialize(writer);
+                        }
+
+                        foreach (IClient client in ClientManager.GetAllClients().Where(x => x != e.Client))
+                            client.SendMessage(message, e.SendMode);
+                    }
+                }
+            }
         }
 
         // Basically the same as OnPlayerInformationMessage - TODO

@@ -7,6 +7,7 @@ using DarkRift.Client.Unity;
 
 public class NetworkManager : MonoBehaviour
 {
+    public static NetworkManager singleton;
     private UnityClient drClient;
 
     public Dictionary<ushort, NetworkEntity> networkPlayers = new Dictionary<ushort, NetworkEntity>();
@@ -16,6 +17,13 @@ public class NetworkManager : MonoBehaviour
     public GameObject networkPlayerPrefab;
 
     void Awake() {
+        if (singleton != null) {
+            Destroy(gameObject);
+            return;
+        }
+
+        singleton = this;
+
         drClient = GetComponent<UnityClient>();
         drClient.MessageReceived += MessageReceived;
     }
@@ -26,7 +34,9 @@ public class NetworkManager : MonoBehaviour
                 PlayerConnect(sender, e);
             } else if (message.Tag == Tags.PlayerDisconnectTag) {
                 PlayerDisconnect(sender, e);
-            } else if (message.Tag == Tags.PlayerInformationTag) {
+            } else if (message.Tag == Tags.PlayerMoveTag) {
+                PlayerMove(sender, e);
+            }else if (message.Tag == Tags.PlayerInformationTag) {
                 PlayerInformation(sender, e);
             } else if (message.Tag == Tags.StartGameTag) {
                 StartGame(sender, e);
@@ -74,6 +84,17 @@ public class NetworkManager : MonoBehaviour
         using (Message message = e.GetMessage()) {
             using (DarkRiftReader reader = message.GetReader()) {
                 networkPlayers.Remove(reader.ReadUInt16());
+            }
+        }
+    }
+
+    void PlayerMove(object sender, MessageReceivedEventArgs e) {
+        using (Message message = e.GetMessage()) {
+            using (DarkRiftReader reader = message.GetReader()) {
+                ushort ID = reader.ReadUInt16();
+                Vector3 newPosition = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+
+                networkPlayers[ID].transform.position = newPosition;
             }
         }
     }
@@ -139,7 +160,7 @@ public class NetworkManager : MonoBehaviour
         }
     }
 
-    // Message for telling the server a player is ready
+    // Message for telling the server a player is ready - don't think ID needs to be in constructor
     private class PlayerReadyMessage : IDarkRiftSerializable {
         public ushort id {get; set;}
         public bool isReady {get; set;}
@@ -174,4 +195,36 @@ public class NetworkManager : MonoBehaviour
     }
 
     // Message for updating movement
+    private class PlayerMoveMessage : IDarkRiftSerializable {
+        public ushort ID {get; set;}
+        public Vector3 position {get; set;}
+
+        public PlayerMoveMessage() {
+
+        }
+
+        public PlayerMoveMessage(Vector3 _postion) {
+            position = _postion;
+        }
+
+        public void Deserialize(DeserializeEvent e) {
+            ID = e.Reader.ReadUInt16();
+            position = new Vector3(e.Reader.ReadSingle(), e.Reader.ReadSingle(), e.Reader.ReadSingle());
+        }
+
+        public void Serialize(SerializeEvent e) {
+            e.Writer.Write(position.x);
+            e.Writer.Write(position.y);
+            e.Writer.Write(position.z);
+        }
+    }
+
+    public void SendPlayerMoveMessage(Vector3 position) {
+        using (DarkRiftWriter writer = DarkRiftWriter.Create()) {
+            writer.Write(new PlayerMoveMessage(position));
+            using (Message message = Message.Create(Tags.PlayerMoveTag, writer)) {
+                drClient.SendMessage(message, SendMode.Unreliable);
+            }
+        }
+    }
 }
