@@ -77,8 +77,8 @@ namespace ScalingPlugins
             Console.WriteLine(sessionIdAssigned);
             Console.WriteLine(awakeTime);
 
-            // If server has been awake for over 2 mins, and no players connected, and the PlayFab server is not in standby (no session id assigned): begin shutdown
-            if (awakeTime > 120f && players.Count <= 0 && sessionIdAssigned)
+            // If server has been awake for over 10 mins, and no players connected, and the PlayFab server is not in standby (no session id assigned): begin shutdown
+            if (awakeTime > 600f && players.Count <= 0 && sessionIdAssigned)
             {
                 OnShutdown();
                 return false;
@@ -128,6 +128,7 @@ namespace ScalingPlugins
             GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
 
             e.Client.MessageReceived += OnPlayerReadyMessage;
+            e.Client.MessageReceived += OnPlayerInformationMessage;
         }
 
         void ClientDisconnected(object sender, ClientDisconnectedEventArgs e)
@@ -158,13 +159,13 @@ namespace ScalingPlugins
             GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
         }
 
+        // Basically the same as OnPlayerInformationMessage - TODO
         void OnPlayerReadyMessage(object sender, MessageReceivedEventArgs e)
         {
             using (Message message = e.GetMessage() as Message)
             {
                 if (message.Tag == Tags.PlayerSetReadyTag)
                 {
-                    Console.WriteLine("Player Ready Received");
                     using (DarkRiftReader reader = message.GetReader())
                     {
                         ushort clientID = reader.ReadUInt16();
@@ -174,6 +175,38 @@ namespace ScalingPlugins
                         players[ClientManager.GetClient(clientID)].isReady = isReady;
                         CheckAllReady();
 
+                    }
+                }
+            }
+        }
+
+        void OnPlayerInformationMessage(object sender, MessageReceivedEventArgs e)
+        {
+            using (Message message = e.GetMessage() as Message)
+            {
+                if (message.Tag == Tags.PlayerInformationTag)
+                {
+                    using (DarkRiftReader reader = message.GetReader())
+                    {
+                        ushort clientID = reader.ReadUInt16();
+                        string playerName = reader.ReadString();
+
+                        // Update player information
+                        players[ClientManager.GetClient(clientID)].playerName = playerName;
+
+                        // Update all players
+                        using (DarkRiftWriter writer = DarkRiftWriter.Create())
+                        {
+                            writer.Write(clientID);
+                            writer.Write(playerName);
+
+                            message.Serialize(writer);
+                        }
+
+                        foreach(IClient client in ClientManager.GetAllClients())
+                        {
+                            client.SendMessage(message, e.SendMode);
+                        }
                     }
                 }
             }

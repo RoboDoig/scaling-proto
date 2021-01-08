@@ -8,17 +8,16 @@ using DarkRift.Client.Unity;
 public class NetworkManager : MonoBehaviour
 {
     private UnityClient drClient;
-    private UIManager uiManager;
 
-    public Dictionary<ushort, SimpleNetworkEntity> networkPlayers = new Dictionary<ushort, SimpleNetworkEntity>();
+    public Dictionary<ushort, NetworkEntity> networkPlayers = new Dictionary<ushort, NetworkEntity>();
+
+    // Player prefabs
+    public GameObject localPlayerPrefab;
+    public GameObject networkPlayerPrefab;
 
     void Awake() {
         drClient = GetComponent<UnityClient>();
         drClient.MessageReceived += MessageReceived;
-    }
-
-    void Start() {
-        uiManager = UIManager.singleton;
     }
 
     void MessageReceived(object sender, MessageReceivedEventArgs e) {
@@ -27,8 +26,10 @@ public class NetworkManager : MonoBehaviour
                 PlayerConnect(sender, e);
             } else if (message.Tag == Tags.PlayerDisconnectTag) {
                 PlayerDisconnect(sender, e);
+            } else if (message.Tag == Tags.PlayerInformationTag) {
+                PlayerInformation(sender, e);
             } else if (message.Tag == Tags.StartGameTag) {
-                Debug.Log("START GAME!!!");
+                StartGame(sender, e);
             }
         }
 
@@ -42,7 +43,29 @@ public class NetworkManager : MonoBehaviour
                 ushort ID = reader.ReadUInt16();
                 string playerName = reader.ReadString();
 
-                networkPlayers.Add(ID, new SimpleNetworkEntity(ID, playerName));
+                Vector3 position = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+
+                Color32 color = new Color32(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), 255);
+
+                // Player / Network Player Spawn
+                GameObject obj;
+                if (ID == drClient.ID) {
+                    // If this ID corresponds to this client, spawn the controllable player prefab
+                    obj = Instantiate(localPlayerPrefab, position, Quaternion.identity) as GameObject;
+                } else {
+                    // Else we spawn a network prefab, non-controllable
+                    obj = Instantiate(networkPlayerPrefab, position, Quaternion.identity) as GameObject;
+                }
+
+                // Set the color
+                Renderer renderer = obj.GetComponent<MeshRenderer>();
+                renderer.material.color = color;
+
+                // Get network entity data of prefab and add to network players store
+                networkPlayers.Add(ID, obj.GetComponent<NetworkEntity>());
+
+                // Update player name
+                networkPlayers[ID].SetPlayerName(playerName);
             }
         }
     }
@@ -55,9 +78,69 @@ public class NetworkManager : MonoBehaviour
         }
     }
 
+    void PlayerInformation(object sender, MessageReceivedEventArgs e) {
+        using (Message message = e.GetMessage()) {
+            using (DarkRiftReader reader = message.GetReader()) {
+                ushort ID = reader.ReadUInt16();
+                string playerName = reader.ReadString();
+
+                networkPlayers[ID].SetPlayerName(playerName);
+            }
+        }
+
+        Debug.Log("Player Information message");
+    }
+
+    void StartGame(object sender, MessageReceivedEventArgs e) {
+        Debug.Log("Start Game");
+        UIManager.singleton.CloseUI();
+
+        // Set the local player to be controllable
+        foreach (KeyValuePair<ushort, NetworkEntity> networkPlayer in networkPlayers) {
+            Player player = networkPlayer.Value.GetComponent<Player>();
+            if (player != null) {
+                player.controllable = true;
+            }
+        }
+    }
     
     // Messages - maybe there should be a separate namespace for these so that both server and client can use them
-    public class PlayerReadyMessage : IDarkRiftSerializable {
+    // Message for updating player information
+    private class PlayerInformationMessage : IDarkRiftSerializable {
+        public ushort id {get; set;}
+        public string playerName {get; set;}
+
+        public PlayerInformationMessage() {
+
+        }
+
+        public PlayerInformationMessage(ushort _id, string _playerName) {
+            id = _id;
+            playerName = _playerName;
+        }
+
+        public void Deserialize(DeserializeEvent e) {
+            id  = e.Reader.ReadUInt16();
+            playerName = e.Reader.ReadString();
+        }
+
+        public void Serialize(SerializeEvent e) {
+            e.Writer.Write(id);
+            e.Writer.Write(playerName);
+        }
+    }
+
+    public void SendPlayerInformationMessage(string playerName) {
+        using (DarkRiftWriter writer = DarkRiftWriter.Create()) {
+            writer.Write(new PlayerInformationMessage(drClient.ID, playerName));
+            using (Message message = Message.Create(Tags.PlayerInformationTag, writer)) {
+                drClient.SendMessage(message, SendMode.Reliable);
+            }
+        }
+    }
+
+    // Message for telling the server a player is ready
+    private class PlayerReadyMessage : IDarkRiftSerializable {
         public ushort id {get; set;}
         public bool isReady {get; set;}
 
@@ -89,4 +172,6 @@ public class NetworkManager : MonoBehaviour
             }
         }
     }
+
+    // Message for updating movement
 }

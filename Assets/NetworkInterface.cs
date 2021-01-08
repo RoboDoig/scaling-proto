@@ -1,9 +1,7 @@
 using System.Collections;
-using System.Collections.Generic;
-using System;
 using System.Net;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.MultiplayerModels;
@@ -11,71 +9,76 @@ using DarkRift;
 using DarkRift.Client;
 using DarkRift.Client.Unity;
 
-// This class should probably be called network interface or something - TODO
-public class NetworkStarter : MonoBehaviour
+public class NetworkInterface : MonoBehaviour
 {
-    // PlayFab settings
-    public string titleId;
-    public string region;
-    public string buildId;
-
-    // DarkRift
+    public static NetworkInterface singleton;
     private UnityClient drClient;
+    private UIManager uiManager;
     private NetworkManager networkManager;
 
-    // UI i/o components
-    private UIManager uiManager;
+    // PlayFab settings
+    public string titleID; // The playfab title ID
+    public string region; // The region where we will try to connect
+    public string matchmakingQueue; // The name of the matchmaking queue we'll use
+    public int matchmakingTimeout; // How long to attempt matchmaking before resetting
+    public string playfabTCPPortName; // Playfab's name for the TCP port mapping
+    public string playfabUDPPortName; // Playfab's name for the UDP port mapping
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        // Get reference to UI singleton
+    void Awake() {
+        if (singleton != null) {
+            Destroy(gameObject);
+            return;
+        }
+
+        singleton = this;
+    }
+
+    void Start() {
+        // Cache components
+        drClient = GetComponent<UnityClient>();
         uiManager = UIManager.singleton;
         networkManager = GetComponent<NetworkManager>();
-
-        // Link start button click to StartSession method
-        uiManager.startSessionButton.onClick.AddListener(StartSession);
-        uiManager.localTestButton.onClick.AddListener(StartLocalSession);
-        uiManager.readyButton.onClick.AddListener(SetPlayerReady);
-
-        // Link to DR client
-        drClient = GetComponent<UnityClient>();
     }
 
-    public void StartSession() {
-        string clientName = uiManager.nameInputField.text;
+    // General Functions //
+    public void SetPlayerReady() {
+        // Tell the server this player is ready to start game
+        networkManager.SendPlayerReadyMessage(true);
 
-        // First attempt to login
-        var request = new LoginWithCustomIDRequest { CustomId = clientName, CreateAccount = true};
-        PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnLoginFailure);
-
-        uiManager.startSessionButton.interactable = false;
-        uiManager.localTestButton.interactable = false;
-        uiManager.nameInputField.interactable = false;
+        // Update UI
+        uiManager.SetLobbyInteractable(false);
     }
 
-    // Connect with local test server
+    // Connect with local test server //
     public void StartLocalSession() {
+        // Connect to local network
         drClient.ConnectInBackground(IPAddress.Parse("127.0.0.1"), 7777, 7777, true, delegate {OnLocalSessionCallback();} );
 
-        uiManager.startSessionButton.interactable = false;
-        uiManager.localTestButton.interactable = false;
-        uiManager.nameInputField.interactable = false;
+        // Update UI
+        uiManager.SetInputInteractable(false);
     }
 
     public void OnLocalSessionCallback() {
         if (drClient.ConnectionState == ConnectionState.Connected) {
-            uiManager.readyButton.interactable = true;
+            // If connection successful, send any additional player info
+            networkManager.SendPlayerInformationMessage(uiManager.nameInputField.text);
+
+            // Set lobby controls to interactable
+            uiManager.SetLobbyInteractable(true);
         } else {
-            uiManager.startSessionButton.interactable = true;
-            uiManager.localTestButton.interactable = true;
-            uiManager.nameInputField.interactable = true;
+            // Else reset the input UI
+            uiManager.SetInputInteractable(true);
         }
     }
 
-    public void SetPlayerReady() {
-        // When player clicks ready, tell the server
-        networkManager.SendPlayerReadyMessage(true);
+    // PlayFab Connection //
+    public void StartSession(string clientName) {
+        // Attempt to login to PlayFab
+        var request = new LoginWithCustomIDRequest { CustomId = clientName, CreateAccount = true};
+        PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnPlayFabError);
+
+        // Disable input panel
+        uiManager.SetInputInteractable(false);
     }
 
     private void OnLoginSuccess(LoginResult result) {
@@ -83,13 +86,8 @@ public class NetworkStarter : MonoBehaviour
         StartMatchmakingRequest(result.EntityToken.Entity.Id, result.EntityToken.Entity.Type);
     }
 
-    // TODO - all these error handlers do basically the same thing so far, maybe they can be consolidated
-    private void OnLoginFailure(PlayFabError error) {
-        // If login fails, debug log an error report
-        Debug.Log(error.GenerateErrorReport());
-    }
-
     private void StartMatchmakingRequest(string entityID, string entityType) {
+        // Create a matchmaking request
         PlayFabMultiplayerAPI.CreateMatchmakingTicket(
             new CreateMatchmakingTicketRequest {
                 Creator = new MatchmakingPlayer {
@@ -110,27 +108,23 @@ public class NetworkStarter : MonoBehaviour
                 },
 
                 // Cancel matchmaking after this time in seconds with no match found
-                GiveUpAfterSeconds = 100,
+                GiveUpAfterSeconds = matchmakingTimeout,
 
                 // name of the queue to poll
-                QueueName = "standard_queue",
+                QueueName = matchmakingQueue,
             },
 
             this.OnMatchmakingTicketCreated,
-            this.OnMatchmakingError
+            this.OnPlayFabError
         );
     }
 
     private void OnMatchmakingTicketCreated(CreateMatchmakingTicketResult createMatchmakingTicketResult) {
-        uiManager.startSessionButton.GetComponentInChildren<Text>().text = "Matchmaking request sent";
-
-        // Now we need to start polling the ticket
+        // Now we need to start polling the ticket periodically, using a coroutine
         StartCoroutine(PollMatchmakingTicket(createMatchmakingTicketResult.TicketId));
-    }
 
-    private void OnMatchmakingError(PlayFabError error) {
-        // If matchmaking request fails, log an error report
-        Debug.Log(error.GenerateErrorReport());
+        // Display progress in UI
+        uiManager.DisplayNetworkMessage("Matchmaking request sent");
     }
 
     private IEnumerator PollMatchmakingTicket(string ticketId) {
@@ -141,42 +135,44 @@ public class NetworkStarter : MonoBehaviour
         PlayFabMultiplayerAPI.GetMatchmakingTicket(
             new GetMatchmakingTicketRequest {
                 TicketId = ticketId,
-                QueueName = "standard_queue"
+                QueueName = matchmakingQueue
             },
 
             // callbacks
             this.OnGetMatchmakingTicket,
-            this.OnMatchmakingError
+            this.OnPlayFabError
         );
     }
 
     private void OnGetMatchmakingTicket(GetMatchmakingTicketResult getMatchmakingTicketResult) {
-        uiManager.startSessionButton.GetComponentInChildren<Text>().text = getMatchmakingTicketResult.Status;
+        // When PlayFab returns our matchmaking ticket
 
         if (getMatchmakingTicketResult.Status == "Matched") {
             // If we found a match, we then need to access its server
             MatchFound(getMatchmakingTicketResult);
         } else if (getMatchmakingTicketResult.Status == "Canceled") {
-            // If the matchmaking ticket was canceled
-            uiManager.startSessionButton.interactable = true;
-            uiManager.localTestButton.interactable = true;
-            uiManager.nameInputField.interactable = true;
-            uiManager.startSessionButton.GetComponentInChildren<Text>().text = "Start Session";
+            // If the matchmaking ticket was canceled we need to reset the input UI
+            uiManager.SetInputInteractable(true);
+            uiManager.DisplayNetworkMessage("Start Session");
         } else {
-            // else we keep polling the ticket
+            // If we don't have a conclusive matchmaking status, we keep polling the ticket
             StartCoroutine(PollMatchmakingTicket(getMatchmakingTicketResult.TicketId));
         }
+
+        // Display matchmaking status in the UI
+        uiManager.DisplayNetworkMessage(getMatchmakingTicketResult.Status);
     }
 
-    private void MatchFound(GetMatchmakingTicketResult getMatchmakingTicketResult) {
+     private void MatchFound(GetMatchmakingTicketResult getMatchmakingTicketResult) {
+        // When we find a match, we need to request the connection variables to join clients
         PlayFabMultiplayerAPI.GetMatch(
             new GetMatchRequest {
                 MatchId = getMatchmakingTicketResult.MatchId,
-                QueueName = "standard_queue"
+                QueueName = matchmakingQueue
             },
 
             this.OnGetMatch,
-            this.OnMatchmakingError
+            this.OnPlayFabError
         );
     }
 
@@ -188,15 +184,21 @@ public class NetworkStarter : MonoBehaviour
 
         // Get the ports and names to join
         foreach (Port port in getMatchResult.ServerDetails.Ports) {
-            if (port.Name == "gg_tcp")
+            if (port.Name == playfabTCPPortName)
                 tcpPort = port.Num;
 
-            if (port.Name == "gg_udp")
+            if (port.Name == playfabUDPPortName)
                 udpPort = port.Num;
         }
 
         // Connect and initialize the DarkRiftClient, hand over control to the NetworkManager
         if (tcpPort != 0 && udpPort != 0)
             drClient.ConnectInBackground(IPAddress.Parse(ipString), tcpPort, udpPort, true, null);
+    }
+
+    // PlayFab error handling //
+    private void OnPlayFabError(PlayFabError error) {
+        // Debug log an error report
+        Debug.Log(error.GenerateErrorReport());
     }
 }
