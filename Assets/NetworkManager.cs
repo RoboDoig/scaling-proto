@@ -91,10 +91,9 @@ public class NetworkManager : MonoBehaviour
     void PlayerMove(object sender, MessageReceivedEventArgs e) {
         using (Message message = e.GetMessage()) {
             using (DarkRiftReader reader = message.GetReader()) {
-                ushort ID = reader.ReadUInt16();
-                Vector3 newPosition = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+                PlayerMoveMessage playerMoveMessage = reader.ReadSerializable<PlayerMoveMessage>();
 
-                networkPlayers[ID].transform.position = newPosition;
+                networkPlayers[playerMoveMessage.ID].transform.position = playerMoveMessage.position;
             }
         }
     }
@@ -102,18 +101,14 @@ public class NetworkManager : MonoBehaviour
     void PlayerInformation(object sender, MessageReceivedEventArgs e) {
         using (Message message = e.GetMessage()) {
             using (DarkRiftReader reader = message.GetReader()) {
-                ushort ID = reader.ReadUInt16();
-                string playerName = reader.ReadString();
+                PlayerInformationMessage playerInformationMessage = reader.ReadSerializable<PlayerInformationMessage>();
 
-                networkPlayers[ID].SetPlayerName(playerName);
+                networkPlayers[playerInformationMessage.id].SetPlayerName(playerInformationMessage.playerName);
             }
         }
-
-        Debug.Log("Player Information message");
     }
 
     void StartGame(object sender, MessageReceivedEventArgs e) {
-        Debug.Log("Start Game");
         UIManager.singleton.CloseUI();
 
         // Set the local player to be controllable
@@ -146,7 +141,6 @@ public class NetworkManager : MonoBehaviour
         }
 
         public void Serialize(SerializeEvent e) {
-            e.Writer.Write(id);
             e.Writer.Write(playerName);
         }
     }
@@ -180,7 +174,6 @@ public class NetworkManager : MonoBehaviour
         }
 
         public void Serialize(SerializeEvent e) {
-            e.Writer.Write(id);
             e.Writer.Write(isReady);
         }
     }

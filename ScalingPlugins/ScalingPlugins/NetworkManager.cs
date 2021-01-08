@@ -117,16 +117,10 @@ namespace ScalingPlugins
                 e.Client.SendMessage(playerMessage, SendMode.Reliable);
             }
 
-            // Tell PlayFab about this player - TODO this is repeated in client disconnected
-            pfPlayers.Add(e.Client, new ConnectedPlayer(newPlayer.playerName));
+            // Tell PlayFab about this player
+            UpdatePlayFabPlayers();
 
-            List<ConnectedPlayer> listPfPlayers = new List<ConnectedPlayer>();
-            foreach (KeyValuePair<IClient, ConnectedPlayer> pfPlayer in pfPlayers)
-            {
-                listPfPlayers.Add(pfPlayer.Value);
-            }
-            GameserverSDK.UpdateConnectedPlayers(listPfPlayers);
-
+            // Set client message callbacks
             e.Client.MessageReceived += OnPlayerMoveMessage;
             e.Client.MessageReceived += OnPlayerReadyMessage;
             e.Client.MessageReceived += OnPlayerInformationMessage;
@@ -150,7 +144,12 @@ namespace ScalingPlugins
                 }
             }
 
-            // Update playfabs player list - TODO this is repeated in client connected
+            // Update playfabs player list
+            UpdatePlayFabPlayers();
+        }
+
+        void UpdatePlayFabPlayers()
+        {
             List<ConnectedPlayer> listPfPlayers = new List<ConnectedPlayer>();
             foreach (KeyValuePair<IClient, ConnectedPlayer> pfPlayer in pfPlayers)
             {
@@ -196,7 +195,6 @@ namespace ScalingPlugins
             }
         }
 
-        // Basically the same as OnPlayerInformationMessage - TODO
         void OnPlayerReadyMessage(object sender, MessageReceivedEventArgs e)
         {
             using (Message message = e.GetMessage() as Message)
@@ -205,11 +203,10 @@ namespace ScalingPlugins
                 {
                     using (DarkRiftReader reader = message.GetReader())
                     {
-                        ushort clientID = reader.ReadUInt16();
                         bool isReady = reader.ReadBoolean();
 
                         // Update player ready status and check if all players are ready
-                        players[ClientManager.GetClient(clientID)].isReady = isReady;
+                        players[e.Client].isReady = isReady;
                         CheckAllReady();
 
                     }
@@ -225,16 +222,15 @@ namespace ScalingPlugins
                 {
                     using (DarkRiftReader reader = message.GetReader())
                     {
-                        ushort clientID = reader.ReadUInt16();
                         string playerName = reader.ReadString();
 
                         // Update player information
-                        players[ClientManager.GetClient(clientID)].playerName = playerName;
+                        players[e.Client].playerName = playerName;
 
                         // Update all players
                         using (DarkRiftWriter writer = DarkRiftWriter.Create())
                         {
-                            writer.Write(clientID);
+                            writer.Write(e.Client.ID);
                             writer.Write(playerName);
 
                             message.Serialize(writer);
