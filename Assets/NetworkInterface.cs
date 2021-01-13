@@ -146,21 +146,24 @@ public class NetworkInterface : MonoBehaviour
 
     private void OnGetMatchmakingTicket(GetMatchmakingTicketResult getMatchmakingTicketResult) {
         // When PlayFab returns our matchmaking ticket
+        string ticketResult = "";
 
         if (getMatchmakingTicketResult.Status == "Matched") {
             // If we found a match, we then need to access its server
             MatchFound(getMatchmakingTicketResult);
+            ticketResult = getMatchmakingTicketResult.Status;
         } else if (getMatchmakingTicketResult.Status == "Canceled") {
             // If the matchmaking ticket was canceled we need to reset the input UI
             uiManager.SetInputInteractable(true);
-            uiManager.DisplayNetworkMessage("Start Session");
+            ticketResult = "Start Session";
         } else {
             // If we don't have a conclusive matchmaking status, we keep polling the ticket
             StartCoroutine(PollMatchmakingTicket(getMatchmakingTicketResult.TicketId));
+            ticketResult = getMatchmakingTicketResult.Status;
         }
 
         // Display matchmaking status in the UI
-        uiManager.DisplayNetworkMessage(getMatchmakingTicketResult.Status);
+        uiManager.DisplayNetworkMessage(ticketResult);
     }
 
      private void MatchFound(GetMatchmakingTicketResult getMatchmakingTicketResult) {
@@ -193,7 +196,22 @@ public class NetworkInterface : MonoBehaviour
 
         // Connect and initialize the DarkRiftClient, hand over control to the NetworkManager
         if (tcpPort != 0 && udpPort != 0)
-            drClient.ConnectInBackground(IPAddress.Parse(ipString), tcpPort, udpPort, true, null);
+            drClient.ConnectInBackground(IPAddress.Parse(ipString), tcpPort, udpPort, true, delegate {OnPlayFabSessionCallback();});
+    }
+
+    private void OnPlayFabSessionCallback() {
+        if (drClient.ConnectionState == ConnectionState.Connected) {
+            // If connection successful, send any additional player info
+            networkManager.SendPlayerInformationMessage(uiManager.nameInputField.text);
+
+            // Set lobby controls to interactable
+            uiManager.SetInputInteractable(false);
+            uiManager.SetLobbyInteractable(true);
+        } else {
+            // Else reset the input UI
+            uiManager.SetInputInteractable(true);
+            uiManager.SetLobbyInteractable(false);
+        }
     }
 
     // PlayFab error handling //
